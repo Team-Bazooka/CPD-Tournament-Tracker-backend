@@ -11,3 +11,17 @@ export class UserExistsException extends HttpException {
         super("User already exists with this information!!", HttpStatus.BAD_REQUEST)
     }
 }
+
+export class InvalidCredentialsException extends HttpException {
+    constructor(){
+        super('Invalid credentials!!',
+        HttpStatus.NOT_ACCEPTABLE)
+    }
+}
+
+export class UserNotFoundExceptions extends HttpException {
+    constructor(){
+        super( 'User not found!!',
+        HttpStatus.BAD_REQUEST)
+    }
+}

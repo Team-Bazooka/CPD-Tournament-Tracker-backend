@@ -1,7 +1,7 @@
 import { Body, Controller, Post, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from 'src/utils/prisma.service';
 import { IMember } from 'src/utils/types';
-import { IncompleteInputException, UserExistsException } from 'src/utils/exceptions';
+import { IncompleteInputException, InvalidCredentialsException, UserExistsException, UserNotFoundExceptions } from 'src/utils/exceptions';
 import * as jwt from "jsonwebtoken";
 import * as bcrypt from 'bcryptjs';
 
@@ -69,7 +69,7 @@ export class MemberController {
         } catch (error) {
             console.log(error);
             if (error instanceof HttpException) {
-              throw new HttpException(error, HttpStatus.BAD_REQUEST);
+              throw new HttpException(error.message, error.getStatus());
             } else {
               throw new HttpException(
                 error.meta || 'Error occurred check the log in the server',
@@ -83,7 +83,50 @@ export class MemberController {
     async login(
         @Body() loginData: { identifier:string, password:string }
     ){
+        const { identifier, password } = loginData;
+        if(!identifier || !password){
+            throw new IncompleteInputException()
+        }
 
+        try {
+            const u = await this.prismaService.member.findMany({
+                where: {
+                    OR: [
+                        {
+                            email: identifier
+                        },
+                        {
+                            student_id: identifier
+                        }
+                    ]
+                }
+            })
+
+            if(u[0]){
+                const isMatch = bcrypt.compareSync(password, u[0].password);
+                if(isMatch){
+                    const token = jwt.sign( u[0], process.env.JWT_SECRET, {
+                        expiresIn: '2 days',
+                      });
+                
+                    return { token: token, user: u[0] };
+                }else{
+                    throw new InvalidCredentialsException()
+                }
+            }else{
+                throw new UserNotFoundExceptions()
+            }
+        } catch (error) {
+            console.log(error);
+            if (error instanceof HttpException) {
+              throw new HttpException(error.message, error.getStatus());
+            } else {
+              throw new HttpException(
+                error.meta || 'Error occurred check the log in the server',
+                HttpStatus.INTERNAL_SERVER_ERROR,
+              );
+            }
+        }
     }
 
 }
