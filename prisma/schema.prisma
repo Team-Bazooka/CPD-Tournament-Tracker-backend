@@ -12,7 +12,7 @@ model member {
   fname            String
   lname            String
   student_id       String   @unique
-  team_id          String
+  team_id          Int
   kattis_acct_link String
   email            String
   password         String

@@ -45,6 +45,27 @@ export class MemberController {
             if(exists){
                 throw new UserExistsException();
             }
+            
+            const newMemeber = await this.prismaService.member.create({
+                data: {
+                    fname,
+                    lname,
+                    student_id,
+                    team_id: 0,
+                    kattis_acct_link,
+                    email,
+                    password: pwd,
+                    role: "user",
+                    registered_at: new Date()
+                }
+            })
+
+            const token = jwt.sign( memberData, process.env.JWT_SECRET, {
+                expiresIn: '2 days',
+              });
+        
+            return { token: token, user: newMemeber };
+
         } catch (error) {
             console.log(error);
             if (error instanceof HttpException) {
