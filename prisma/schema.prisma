@@ -14,6 +14,7 @@ model member {
   student_id       String   @unique
   team_id          Int
   kattis_acct_link String
+  tg_username      String   @default("")
   email            String
   password         String
   role             String

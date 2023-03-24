@@ -15,8 +15,8 @@ export class MemberController {
     async signup(
         @Body() memberData: IMember
     ){
-        const { fname, lname, student_id, kattis_acct_link, email, password } = memberData;
-        if(!fname || !lname || !student_id || !kattis_acct_link || !email || !password){
+        const { fname, lname, student_id, kattis_acct_link, tg_username, email, password } = memberData;
+        if(!fname || !lname || !student_id || !kattis_acct_link || !tg_username || !email || !password){
            throw new IncompleteInputException();
         }
 
@@ -35,6 +35,9 @@ export class MemberController {
                         },
                         {
                             kattis_acct_link
+                        },
+                        {
+                            tg_username
                         }
                     ]
                 }
@@ -53,6 +56,7 @@ export class MemberController {
                     student_id,
                     team_id: 0,
                     kattis_acct_link,
+                    tg_username,
                     email,
                     password: pwd,
                     role: "user",
