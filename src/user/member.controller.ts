@@ -12,6 +12,7 @@ import { IMember } from 'src/utils/types';
 import {
   IncompleteInputException,
   InvalidCredentialsException,
+  TeamExistsException,
   UserExistsException,
   UserNotFoundExceptions,
 } from 'src/utils/exceptions';
@@ -156,7 +157,7 @@ export class MemberController {
   }
 
   @Put('/update/:id')
-  async updateProfile(@Param("id") id: number, @Body() updatedData: IMember) {
+  async updateProfile(@Param('id') id: number, @Body() updatedData: IMember) {
     const {
       fname,
       lname,
@@ -167,32 +168,46 @@ export class MemberController {
       password,
     } = updatedData;
 
-    if (
-      !id ||
-      !fname ||
-      !lname ||
-      !student_id ||
-      !kattis_acct_link ||
-      !tg_username ||
-      !email ||
-      !password
-    ) {
+    if (!id || !fname || !lname || !password) {
       throw new IncompleteInputException();
     }
 
     try {
       const u = await this.prismaService.member.findMany({
         where: {
-            id: typeof id === "string" ? parseInt(id) : id
-        }
+          id: typeof id === 'string' ? parseInt(id) : id,
+        },
       });
 
       if (u[0]) {
-        let salt: string = await bcrypt.genSalt(10);
+        const n = await this.prismaService.member.count({
+          where: {
+            OR: [
+              {
+                student_id,
+              },
+              {
+                email,
+              },
+              {
+                kattis_acct_link,
+              },
+              {
+                tg_username,
+              },
+            ],
+          },
+        });
+
+        const exists = n > 0 ? true : false;
+        if (exists) {
+          throw new UserExistsException();
+        } else {
+          let salt: string = await bcrypt.genSalt(10);
           let pwd: string = await bcrypt.hash(password, salt);
           await this.prismaService.member.update({
             where: {
-              id: typeof id === "string" ? parseInt(id) : id
+              id: typeof id === 'string' ? parseInt(id) : id,
             },
             data: {
               fname,
@@ -205,9 +220,64 @@ export class MemberController {
             },
           });
 
-          return { message: "Done!", code: HttpStatus.ACCEPTED }
+          return { message: 'Done!', code: HttpStatus.ACCEPTED };
+        }
       } else {
         throw new UserNotFoundExceptions();
+      }
+    } catch (error) {
+      console.log(error);
+      if (error instanceof HttpException) {
+        throw new HttpException(error.message, error.getStatus());
+      } else {
+        throw new HttpException(
+          error.meta || 'Error occurred check the log in the server',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+    }
+  }
+
+  @Post('/create/:id')
+  async createTeam(
+    @Param('id') id: number,
+    @Body() teamData: { name: string; logo_url: string },
+  ) {
+    const { name, logo_url } = teamData;
+    if (!name || !id || !logo_url) {
+      throw new IncompleteInputException();
+    }
+
+    try {
+      const n = await this.prismaService.team.count({
+        where: {
+          name,
+        },
+      });
+
+      const exists = n > 0 ? true : false;
+
+      if (exists) {
+        throw new TeamExistsException();
+      } else {
+        const newTeam = await this.prismaService.team.create({
+          data: {
+            name,
+            logo_url,
+            created_At: new Date(),
+          },
+        });
+
+        await this.prismaService.member.update({
+          where: {
+            id: typeof id === 'string' ? parseInt(id) : id
+          },
+          data: {
+            team_id: newTeam.id,
+          },
+        });
+
+        return { team: newTeam };
       }
     } catch (error) {
       console.log(error);

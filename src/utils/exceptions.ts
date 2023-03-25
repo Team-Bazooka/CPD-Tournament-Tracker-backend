@@ -31,3 +31,9 @@ export class InputAlreadyTakenException extends HttpException {
         super(message, HttpStatus.BAD_REQUEST)
     }
 }
+
+export class TeamExistsException extends HttpException {
+    constructor(){
+        super("Team already exists with this information!!", HttpStatus.BAD_REQUEST)
+    }
+}

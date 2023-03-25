@@ -20,3 +20,10 @@ model member {
   role             String
   registered_at    DateTime
 }
+
+model team {
+  id         Int      @id @default(autoincrement())
+  name       String
+  logo_url   String
+  created_At DateTime
+}
