@@ -25,3 +25,9 @@ export class UserNotFoundExceptions extends HttpException {
         HttpStatus.BAD_REQUEST)
     }
 }
+
+export class InputAlreadyTakenException extends HttpException {
+    constructor(message: string){
+        super(message, HttpStatus.BAD_REQUEST)
+    }
+}
