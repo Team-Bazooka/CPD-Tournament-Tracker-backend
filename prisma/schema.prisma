@@ -12,13 +12,14 @@ model member {
   fname            String
   lname            String
   student_id       String   @unique
-  team_id          Int
+  team_id          Int?     
   kattis_acct_link String
   tg_username      String   @default("")
   email            String
   password         String
   role             String
   registered_at    DateTime
+  team             team?     @relation(fields: [team_id], references: [id])
 }
 
 model team {
@@ -26,4 +27,19 @@ model team {
   name       String
   logo_url   String
   created_At DateTime
+  members    member[]
+}
+
+model invitation {
+  id         Int      @id @default(autoincrement())
+  team_name  String
+  member_id  Int
+  invitor_id Int
+  status     invitation_status @default(pending)
+}
+
+enum invitation_status {
+  accepted
+  pending
+  declined
 }
