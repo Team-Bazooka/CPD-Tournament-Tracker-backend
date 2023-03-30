@@ -17,7 +17,7 @@ model member {
   tg_username      String        @default("")
   email            String
   password         String
-  role             String
+  role             role          @default(user)
   registered_at    DateTime
   Team             team?         @relation(fields: [team_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
   Applications     application[]
@@ -43,6 +43,7 @@ model invitation {
 
 model tournament {
   id             Int             @id @default(autoincrement())
+  name           String
   type           tournament_type
   no_of_rounds   Int
   no_of_problems Int
@@ -101,6 +102,11 @@ model application {
   Team          team?             @relation(fields: [team_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
   Member        member?           @relation(fields: [member_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
   Tournament    tournament        @relation(fields: [tournament_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+enum role {
+   user 
+   admin
 }
 
 enum difficulty {
