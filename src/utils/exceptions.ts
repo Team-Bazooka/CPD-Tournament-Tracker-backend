@@ -37,3 +37,9 @@ export class TeamExistsException extends HttpException {
         super("Team already exists with this information!!", HttpStatus.BAD_REQUEST)
     }
 }
+
+export class TeamNotFoundException extends HttpException {
+    constructor(){
+        super("Team doesn't exists with this information!!", HttpStatus.BAD_REQUEST)
+    }
+}

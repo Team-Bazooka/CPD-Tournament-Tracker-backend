@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   Put,
+  Query,
 } from '@nestjs/common';
 import { PrismaService } from 'src/utils/prisma.service';
 import { IMember } from 'src/utils/types';
@@ -14,6 +15,7 @@ import {
   IncompleteInputException,
   InvalidCredentialsException,
   TeamExistsException,
+  TeamNotFoundException,
   UserExistsException,
   UserNotFoundExceptions,
 } from 'src/utils/exceptions';
@@ -272,7 +274,7 @@ export class MemberController {
 
         await this.prismaService.member.update({
           where: {
-            id: typeof id === 'string' ? parseInt(id) : id
+            id: typeof id === 'string' ? parseInt(id) : id,
           },
           data: {
             team_id: newTeam.id,
@@ -294,16 +296,15 @@ export class MemberController {
     }
   }
 
-  @Post("/add_member/:id")
+  @Post('/add_member/:id')
   async addTeamMemebers(
-    @Param("id") id: number,
-    @Body() invitationData: { team_name: string, identifier: string }
-  ){
-
+    @Param('id') id: number,
+    @Body() invitationData: { team_name: string; identifier: string },
+  ) {
     console.log(invitationData, id);
-    
+
     const { team_name, identifier } = invitationData;
-    if(!id || !team_name || !identifier){
+    if (!id || !team_name || !identifier) {
       throw new IncompleteInputException();
     }
 
@@ -312,32 +313,32 @@ export class MemberController {
         where: {
           OR: [
             {
-              student_id: identifier
+              student_id: identifier,
             },
             {
-              email: identifier
+              email: identifier,
             },
             {
-              tg_username: identifier
-            }
-          ]
-        }
-      })
+              tg_username: identifier,
+            },
+          ],
+        },
+      });
 
-      if(u[0]){
+      if (u[0]) {
         await this.prismaService.invitation.create({
           data: {
             member_id: u[0].id,
-            invitor_id: typeof id === "string" ? parseInt(id) : id,
-            team_name
-          }
-        })
+            invitor_id: typeof id === 'string' ? parseInt(id) : id,
+            team_name,
+          },
+        });
 
         return {
-          message: "Invitation sent!!",
-          code: HttpStatus.OK
-        }
-      }else{
+          message: 'Invitation sent!!',
+          code: HttpStatus.OK,
+        };
+      } else {
         throw new UserNotFoundExceptions();
       }
     } catch (error) {
@@ -353,22 +354,20 @@ export class MemberController {
     }
   }
 
-  @Get("/notifications/:id")
-  async getNotifications(
-    @Param("id") id : number
-  ){
-    if(!id){
-      throw new IncompleteInputException()
+  @Get('/notifications/:id')
+  async getNotifications(@Param('id') id: number) {
+    if (!id) {
+      throw new IncompleteInputException();
     }
 
     try {
       const invitations = await this.prismaService.invitation.findMany({
         where: {
-          member_id: typeof id === "string" ? parseInt(id) : id 
-        }
-      })
-      
-      return { data: invitations, code: HttpStatus.OK }
+          member_id: typeof id === 'string' ? parseInt(id) : id,
+        },
+      });
+
+      return { data: invitations, code: HttpStatus.OK };
     } catch (error) {
       console.log(error);
       if (error instanceof HttpException) {
@@ -382,56 +381,56 @@ export class MemberController {
     }
   }
 
-  @Put("/resolve/:id")
+  @Put('/resolve/:id')
   async resolveInvitation(
-    @Param("id") id: number,
-    @Body() decisionData : { invitation_id: number, decision: string }
-  ){
+    @Param('id') id: number,
+    @Body() decisionData: { invitation_id: number; decision: string },
+  ) {
     const { invitation_id, decision } = decisionData;
-    if(!invitation_id || !decision){
-      throw new IncompleteInputException()
+    if (!invitation_id || !decision) {
+      throw new IncompleteInputException();
     }
 
     try {
-      if(decision === "accept"){
+      if (decision === 'accept') {
         await this.prismaService.invitation.update({
           where: {
-            id: invitation_id
+            id: invitation_id,
           },
           data: {
-            status: invitation_status.accepted
-          }
-         })
+            status: invitation_status.accepted,
+          },
+        });
 
-         const inv = await this.prismaService.invitation.findMany({
+        const inv = await this.prismaService.invitation.findMany({
           where: {
-            id: invitation_id
-          }
-         })
+            id: invitation_id,
+          },
+        });
 
-         const team = await this.prismaService.team.findMany({
+        const team = await this.prismaService.team.findMany({
           where: {
-            name: inv[0].team_name
-          }
-         })
+            name: inv[0].team_name,
+          },
+        });
 
-         await this.prismaService.member.update({
+        await this.prismaService.member.update({
           where: {
-            id: typeof id === "string" ? parseInt(id) : id 
+            id: typeof id === 'string' ? parseInt(id) : id,
           },
           data: {
-            team_id: team[0].id
-          }
-         })
-      }else{
+            team_id: team[0].id,
+          },
+        });
+      } else {
         await this.prismaService.invitation.update({
           where: {
-            id: invitation_id
+            id: invitation_id,
           },
           data: {
-            status: invitation_status.declined
-          }
-         })
+            status: invitation_status.declined,
+          },
+        });
       }
 
       return { message: 'Done!', code: HttpStatus.ACCEPTED };
@@ -448,39 +447,39 @@ export class MemberController {
     }
   }
 
-  @Put("/update/team/:id")
-  async updateTeamProfile (
-    @Param("id") id: number,
-    @Body() updateData : { name:string, logo_url: string }
-  ){
+  @Put('/update/team/:id')
+  async updateTeamProfile(
+    @Param('id') id: number,
+    @Body() updateData: { name: string; logo_url: string },
+  ) {
     const { name, logo_url } = updateData;
-    if(!id){
-      throw new IncompleteInputException()
+    if (!id) {
+      throw new IncompleteInputException();
     }
 
     try {
-       const n = await this.prismaService.team.count({
+      const n = await this.prismaService.team.count({
         where: {
-          name
-        }
-       })
+          name,
+        },
+      });
 
-       const exists = n > 0 ? true : false;
-       if(exists){
-        throw new TeamExistsException()
-       }else{
+      const exists = n > 0 ? true : false;
+      if (exists) {
+        throw new TeamExistsException();
+      } else {
         await this.prismaService.team.update({
           where: {
-            id: typeof id === "string" ? parseInt(id) : id
+            id: typeof id === 'string' ? parseInt(id) : id,
           },
           data: {
             name,
-            logo_url
-          }
-        })
+            logo_url,
+          },
+        });
 
         return { message: 'Done!', code: HttpStatus.ACCEPTED };
-       }
+      }
     } catch (error) {
       console.log(error);
       if (error instanceof HttpException) {
@@ -493,4 +492,69 @@ export class MemberController {
       }
     }
   }
+
+  // not tested
+  @Post('/apply/tournament/:id')
+  async apply(
+    @Param('id') id: number,
+    @Body() applicationData: { team_id: number; tournament_id: number },
+  ) {
+    const { team_id, tournament_id } = applicationData;
+    if (!id || !tournament_id) {
+      throw new IncompleteInputException();
+    }
+
+    try {
+      const tourny = await this.prismaService.tournament.findMany({
+        where: {
+          id:
+            typeof tournament_id === 'string'
+              ? parseInt(tournament_id)
+              : tournament_id,
+        },
+      });
+
+      if (tourny[0]) {
+        if (!team_id && tourny[0].type === 'cup') {
+          await this.prismaService.application.create({
+            data: {
+              member_id: typeof id === 'string' ? parseInt(id) : id,
+              tournament_id,
+              created_at: new Date(),
+            },
+          });
+
+          return { message: 'Done!', code: HttpStatus.ACCEPTED };
+        } else if (team_id && tourny[0].type === 'league') {
+          await this.prismaService.application.create({
+            data: {
+              team_id:
+                typeof team_id === 'string' ? parseInt(team_id) : team_id,
+              tournament_id,
+              created_at: new Date(),
+            },
+          });
+
+          return { message: 'Done!', code: HttpStatus.ACCEPTED };
+        } else {
+          throw new IncompleteInputException();
+        }
+      } else {
+        throw new TeamNotFoundException();
+      }
+    } catch (error) {
+      console.log(error);
+      if (error instanceof HttpException) {
+        throw new HttpException(error.message, error.getStatus());
+      } else {
+        throw new HttpException(
+          error.meta || 'Error occurred check the log in the server',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+    }
+  }
+
+  @Get('/tournament/:id')
+  async getTournament() {}
 }

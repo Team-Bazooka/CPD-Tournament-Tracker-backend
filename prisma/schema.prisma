@@ -8,34 +8,110 @@ datasource db {
 }
 
 model member {
-  id               Int      @id @default(autoincrement())
+  id               Int           @id @default(autoincrement())
   fname            String
   lname            String
-  student_id       String   @unique
-  team_id          Int?     
+  student_id       String        @unique
+  team_id          Int?
   kattis_acct_link String
-  tg_username      String   @default("")
+  tg_username      String        @default("")
   email            String
   password         String
   role             String
   registered_at    DateTime
-  team             team?     @relation(fields: [team_id], references: [id])
+  Team             team?         @relation(fields: [team_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  Applications     application[]
 }
 
 model team {
-  id         Int      @id @default(autoincrement())
-  name       String
-  logo_url   String
-  created_At DateTime
-  members    member[]
+  id           Int           @id @default(autoincrement())
+  name         String
+  logo_url     String
+  created_At   DateTime
+  Members      member[]
+  ScoreBoards  scoreboard[]
+  Applications application[]
 }
 
 model invitation {
-  id         Int      @id @default(autoincrement())
+  id         Int               @id @default(autoincrement())
   team_name  String
   member_id  Int
   invitor_id Int
   status     invitation_status @default(pending)
+}
+
+model tournament {
+  id             Int             @id @default(autoincrement())
+  type           tournament_type
+  no_of_rounds   Int
+  no_of_problems Int
+  no_of_teams    Int
+  created_at     DateTime
+  ended_At       DateTime
+  Rounds         round[]
+  ScoreBoards    scoreboard[]
+  Applications   application[]
+}
+
+model round {
+  id             Int        @id @default(autoincrement())
+  tournament_id  Int
+  team1_id       Int
+  team2_id       Int
+  no_of_problems Int
+  created_at     DateTime
+  deadline       DateTime
+  Tournament     tournament @relation(fields: [tournament_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  Problems       problem[]
+}
+
+model problem {
+  id         Int        @id @default(autoincrement())
+  title      String
+  link       String
+  difficulty difficulty
+  round_id   Int
+  Round      round      @relation(fields: [round_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model scoreboard {
+  id            Int        @id @default(autoincrement())
+  team_id       Int
+  tournament_id Int
+  match_played  Int        @default(0)
+  win           Int        @default(0)
+  lose          Int        @default(0)
+  draw          Int        @default(0)
+  goals_for     Int        @default(0)
+  goals_aganist Int        @default(0)
+  time          Int        @default(0)
+  points        Int        @default(0)
+  Tournamet     tournament @relation(fields: [tournament_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  Team          team       @relation(fields: [team_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model application {
+  id            Int               @id @default(autoincrement())
+  team_id       Int?
+  member_id     Int?
+  tournament_id Int
+  created_at    DateTime
+  status        invitation_status @default(pending)
+  Team          team?             @relation(fields: [team_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  Member        member?           @relation(fields: [member_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  Tournament    tournament        @relation(fields: [tournament_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+enum difficulty {
+  easy
+  medium
+  hard
+}
+
+enum tournament_type {
+  cup
+  league
 }
 
 enum invitation_status {
